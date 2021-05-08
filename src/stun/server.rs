@@ -3,17 +3,22 @@ use std::fmt::Error;
 use rustun::server::{BindingHandler, UdpServer};
 use fibers_global;
 use trackable::track;
+use std::thread;
 
 fn stun_server(port: i32) {
     let addr = format!("0.0.0.0:{}", port).parse().unwrap();
 
-    let server = fibers_global::execute(UdpServer::start(
+    let f = UdpServer::start(
         fibers_global::handle(),
         addr,
         BindingHandler,
-    )).unwrap();
+    );
 
-    fibers_global::execute(server);
+    let server = fibers_global::execute(f).unwrap();
+
+    thread::spawn(move || {
+        fibers_global::execute(server);
+    });
 }
 
 pub fn start_stun_server(port: i32) -> Result<(), Error> {
