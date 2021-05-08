@@ -11,3 +11,5 @@ clap = "2"
 rustun = "0.3"
 fibers_global = "0.1"
 trackable = "0.2"
+actix-web = "3"
+

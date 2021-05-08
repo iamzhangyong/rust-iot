@@ -2,9 +2,17 @@ mod stun;
 
 use std::sync::mpsc::channel;
 use clap::{App, Arg};
+use actix_web::{web, App as WebApp, HttpRequest, HttpServer, Responder};
 use crate::stun::server::*;
 
-fn main() {
+async fn greet(req: HttpRequest) -> impl Responder {
+    let name = req.match_info().get("name").unwrap_or("World");
+    format!("Hello {}!", &name)
+}
+
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     let app = App::new("rust-iot").arg(
         Arg::with_name("stun_port").
             long("stun_port").
@@ -21,6 +29,17 @@ fn main() {
     let (sender, receiver) = channel();
     start_stun_server(stun_port);
 
+    HttpServer::new(|| {
+        WebApp::new()
+            .route("/", web::get().to(greet))
+            .route("/{name}", web::get().to(greet))
+    })
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await;
+
     let ret: i32 = receiver.recv().unwrap();
-    println!("rust-tool exit: {}", ret);
+    println!("rust-iot exit: {}", ret);
+
+    Ok(())
 }
